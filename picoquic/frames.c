@@ -1048,6 +1048,7 @@ static void picoquic_stream_data_chunk_callback(picoquic_cnx_t* cnx, picoquic_st
     int call_back_needed = data_length > 0;
 
     stream->consumed_offset += data_length;
+    cnx->data_consumed += data_length;
 
     if (stream->consumed_offset >= stream->fin_offset && stream->fin_received && !stream->fin_signalled) {
         fin_now = picoquic_callback_stream_fin;

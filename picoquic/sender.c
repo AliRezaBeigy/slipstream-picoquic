@@ -3525,13 +3525,13 @@ int picoquic_prepare_packet_ready(picoquic_cnx_t* cnx, picoquic_path_t* path_x, 
                 /* If necessary, encode the max data frame */
                 if (ret == 0){
                     if (cnx->quic->max_data_limit != 0) {
-                        if (cnx->data_received + ((3 * cnx->quic->max_data_limit) / 4) > cnx->maxdata_local) {
-                            uint64_t max_data_increase = cnx->data_received + cnx->quic->max_data_limit - cnx->maxdata_local;
+                        if (cnx->data_consumed + ((3 * cnx->quic->max_data_limit) / 4) > cnx->maxdata_local) {
+                            uint64_t max_data_increase = cnx->data_consumed + cnx->quic->max_data_limit - cnx->maxdata_local;
                             bytes_next = picoquic_format_max_data_frame(cnx, bytes_next, bytes_max, &more_data, &is_pure_ack,
                                 max_data_increase);
                         }
                     }
-                    else if (2 * cnx->data_received > cnx->maxdata_local) {
+                    else if (2 * cnx->data_consumed > cnx->maxdata_local) {
                         bytes_next = picoquic_format_max_data_frame(cnx, bytes_next, bytes_max, &more_data, &is_pure_ack,
                             picoquic_cc_increased_window(cnx, cnx->maxdata_local));
                     }

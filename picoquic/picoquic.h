@@ -1175,8 +1175,13 @@ typedef int (*picoquic_stream_direct_receive_fn)(picoquic_cnx_t* cnx,
     uint64_t stream_id, int fin, const uint8_t* bytes, uint64_t offset, size_t length,
     void* direct_receive_ctx);
 
+void picoquic_set_default_direct_receive_callback(picoquic_quic_t* quic,
+    picoquic_stream_direct_receive_fn direct_receive_fn, void* direct_receive_ctx);
+
 int picoquic_mark_direct_receive_stream(picoquic_cnx_t* cnx,
     uint64_t stream_id, picoquic_stream_direct_receive_fn direct_receive_fn, void* direct_receive_ctx);
+
+int picoquic_stream_data_consumed(picoquic_cnx_t* cnx, uint64_t stream_id, uint64_t new_offset);
 
 /* Associate stream with app context */
 int picoquic_set_app_stream_ctx(picoquic_cnx_t* cnx,

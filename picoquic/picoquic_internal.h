@@ -610,6 +610,8 @@ typedef struct st_picoquic_quic_t {
     void* tls_master_ctx;
     picoquic_stream_data_cb_fn default_callback_fn;
     void* default_callback_ctx;
+    picoquic_stream_direct_receive_fn default_direct_receive_fn;
+    void* default_direct_receive_ctx;
     char const* default_alpn;
     picoquic_alpn_select_fn alpn_select_fn;
     uint8_t reset_seed[PICOQUIC_RESET_SECRET_SIZE];
@@ -1454,6 +1456,7 @@ typedef struct st_picoquic_cnx_t {
     /* Flow control information */
     uint64_t data_sent;
     uint64_t data_received;
+    uint64_t data_consumed;
     uint64_t maxdata_local; /* Highest value sent to the peer */
     uint64_t maxdata_local_acked; /* Highest value acked by the peer */
     uint64_t maxdata_remote; /* Highest value received from the peer */

@@ -831,6 +831,13 @@ void picoquic_set_default_lossbit_policy(picoquic_quic_t* quic, picoquic_lossbit
     quic->default_tp.enable_loss_bit = (int)default_lossbit_policy;
 }
 
+void picoquic_set_default_direct_receive_callback(picoquic_quic_t* quic,
+    picoquic_stream_direct_receive_fn direct_receive_fn, void* direct_receive_ctx)
+{
+    quic->default_direct_receive_fn = direct_receive_fn;
+    quic->default_direct_receive_ctx = direct_receive_ctx;
+}
+
 void picoquic_set_default_multipath_option(picoquic_quic_t* quic, int multipath_option)
 {
     quic->default_multipath_option = multipath_option;
@@ -3284,6 +3291,12 @@ picoquic_stream_head_t* picoquic_create_stream(picoquic_cnx_t* cnx, uint64_t str
         stream->stream_id = stream_id;
         stream->cnx = cnx;
 
+        if (cnx->quic->default_direct_receive_fn != NULL &&
+            (IS_BIDIR_STREAM_ID(stream_id) || !IS_LOCAL_STREAM_ID(stream_id, cnx->client_mode))) {
+            stream->direct_receive_fn = cnx->quic->default_direct_receive_fn;
+            stream->direct_receive_ctx = cnx->quic->default_direct_receive_ctx;
+        }
+
         if (IS_LOCAL_STREAM_ID(stream_id, cnx->client_mode)) {
             if (IS_BIDIR_STREAM_ID(stream_id)) {
                 stream->maxdata_local = cnx->local_parameters.initial_max_stream_data_bidi_local;
@@ -3391,6 +3404,39 @@ int picoquic_mark_direct_receive_stream(picoquic_cnx_t* cnx, uint64_t stream_id,
     }
 
     return ret;
+}
+
+int picoquic_stream_data_consumed(picoquic_cnx_t* cnx, uint64_t stream_id, uint64_t new_offset)
+{
+    picoquic_stream_head_t* stream = picoquic_find_stream(cnx, stream_id);
+    if (stream == NULL) {
+        return PICOQUIC_ERROR_INVALID_STREAM_ID;
+    }
+    if (new_offset < stream->consumed_offset) {
+        return 0;
+    }
+    if (new_offset > stream->fin_offset) {
+        return PICOQUIC_ERROR_UNEXPECTED_STATE;
+    }
+
+    if (new_offset > stream->consumed_offset) {
+        cnx->data_consumed += (new_offset - stream->consumed_offset);
+        stream->consumed_offset = new_offset;
+    }
+
+    if (stream->fin_received && !stream->fin_signalled && stream->consumed_offset >= stream->fin_offset) {
+        stream->fin_signalled = 1;
+    }
+
+    if (!stream->fin_received && !stream->reset_received && 2 * stream->consumed_offset > stream->maxdata_local) {
+        cnx->max_stream_data_needed = 1;
+    }
+
+    if (stream->fin_signalled) {
+        picoquic_delete_stream_if_closed(cnx, stream);
+    }
+
+    return 0;
 }
 
 
@@ -5109,4 +5155,3 @@ uint64_t picoquic_uniform_random(uint64_t rnd_max)
 {
     return picoquic_public_uniform_random(rnd_max);
 }
-
