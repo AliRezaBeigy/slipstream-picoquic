@@ -1178,6 +1178,10 @@ typedef int (*picoquic_stream_direct_receive_fn)(picoquic_cnx_t* cnx,
 void picoquic_set_default_direct_receive_callback(picoquic_quic_t* quic,
     picoquic_stream_direct_receive_fn direct_receive_fn, void* direct_receive_ctx);
 
+/* If set, ordered stream callbacks do not auto-consume data. */
+void picoquic_set_stream_data_consumption_mode(picoquic_quic_t* quic,
+    int defer_stream_data_consumption);
+
 int picoquic_mark_direct_receive_stream(picoquic_cnx_t* cnx,
     uint64_t stream_id, picoquic_stream_direct_receive_fn direct_receive_fn, void* direct_receive_ctx);
 

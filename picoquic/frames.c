@@ -130,6 +130,12 @@ int picoquic_delete_stream_if_closed(picoquic_cnx_t* cnx, picoquic_stream_head_t
 {
     int ret = 0;
 
+    if (cnx->quic->defer_stream_data_consumption != 0 &&
+        stream->fin_received && !stream->reset_received &&
+        stream->delivered_offset > stream->consumed_offset) {
+        return 0;
+    }
+
     if (!stream->is_closed && picoquic_is_stream_closed(stream, cnx->client_mode)) {
         picoquic_update_max_stream_ID_local(cnx, stream);
         stream->is_closed = 1;
@@ -1041,16 +1047,27 @@ int picoquic_parse_stream_header(const uint8_t* bytes, size_t bytes_max,
     return ret;
 }
 
+static uint64_t picoquic_stream_delivered_offset(picoquic_cnx_t* cnx, picoquic_stream_head_t* stream)
+{
+    return (cnx->quic->defer_stream_data_consumption != 0) ? stream->delivered_offset : stream->consumed_offset;
+}
+
 static void picoquic_stream_data_chunk_callback(picoquic_cnx_t* cnx, picoquic_stream_head_t* stream,
     const uint8_t * bytes, size_t data_length)
 {
     picoquic_call_back_event_t fin_now = picoquic_callback_stream_data;
     int call_back_needed = data_length > 0;
+    uint64_t* delivered_offset = &stream->consumed_offset;
 
-    stream->consumed_offset += data_length;
-    cnx->data_consumed += data_length;
+    if (cnx->quic->defer_stream_data_consumption != 0) {
+        delivered_offset = &stream->delivered_offset;
+    }
+    else {
+        cnx->data_consumed += data_length;
+    }
+    *delivered_offset += data_length;
 
-    if (stream->consumed_offset >= stream->fin_offset && stream->fin_received && !stream->fin_signalled) {
+    if (*delivered_offset >= stream->fin_offset && stream->fin_received && !stream->fin_signalled) {
         fin_now = picoquic_callback_stream_fin;
         stream->fin_signalled = 1;
         call_back_needed = 1;
@@ -1068,14 +1085,16 @@ static void picoquic_stream_data_chunk_callback(picoquic_cnx_t* cnx, picoquic_st
 void picoquic_stream_data_callback(picoquic_cnx_t* cnx, picoquic_stream_head_t* stream)
 {
     picoquic_stream_data_node_t* data;
+    uint64_t delivered_offset = picoquic_stream_delivered_offset(cnx, stream);
 
-    while ((data = (picoquic_stream_data_node_t*)picosplay_first(&stream->stream_data_tree)) != NULL && data->offset <= stream->consumed_offset) {
-        size_t start = (size_t)(stream->consumed_offset - data->offset);
+    while ((data = (picoquic_stream_data_node_t*)picosplay_first(&stream->stream_data_tree)) != NULL && data->offset <= delivered_offset) {
+        size_t start = (size_t)(delivered_offset - data->offset);
         if (data->length >= start) {
             size_t data_length = data->length - start;
             picoquic_stream_data_chunk_callback(cnx, stream, data->bytes + start, data_length);
         }
         picosplay_delete_hint(&stream->stream_data_tree, &data->stream_data_node);
+        delivered_offset = picoquic_stream_delivered_offset(cnx, stream);
     }
 
     /* handle the case where the fin frame does not carry any data */
@@ -1223,6 +1242,8 @@ static int picoquic_stream_network_input(picoquic_cnx_t* cnx, uint64_t stream_id
      */
 
     if (ret == 0) {
+        uint64_t delivered_offset = picoquic_stream_delivered_offset(cnx, stream);
+
         if (stream->direct_receive_fn != NULL) {
             ret = stream->direct_receive_fn(cnx, stream_id, fin, bytes, offset, length, stream->direct_receive_ctx);
             if (ret == PICOQUIC_STREAM_RECEIVE_COMPLETE && stream->fin_received) {
@@ -1233,10 +1254,10 @@ static int picoquic_stream_network_input(picoquic_cnx_t* cnx, uint64_t stream_id
                 uint64_t err = (ret >= PICOQUIC_ERROR_CLASS) ? PICOQUIC_TRANSPORT_INTERNAL_ERROR : (uint64_t)ret;
                 ret = picoquic_connection_error(cnx, err, 0);
             }
-        } else if (stream->consumed_offset >= offset &&  cnx->callback_fn != NULL){
-            if (new_fin_offset >= stream->consumed_offset) {
+        } else if (delivered_offset >= offset &&  cnx->callback_fn != NULL){
+            if (new_fin_offset >= delivered_offset) {
                 /* Arrival of in sequence bytes */
-                uint64_t delivered_index = stream->consumed_offset - offset;
+                uint64_t delivered_index = delivered_offset - offset;
                 uint64_t data_length = length - delivered_index;
 
                 /* Ugly cast, but the callback requires a non-const pointer */
@@ -1250,7 +1271,7 @@ static int picoquic_stream_network_input(picoquic_cnx_t* cnx, uint64_t stream_id
         } else {
             int new_data_available = 0;
 
-            ret = picoquic_queue_network_input(cnx->quic, &stream->stream_data_tree, stream->consumed_offset,
+            ret = picoquic_queue_network_input(cnx->quic, &stream->stream_data_tree, delivered_offset,
                 offset, bytes, length, is_last_frame, received_data, &new_data_available);
             if (ret != 0) {
                 ret = picoquic_connection_error(cnx, (int64_t)ret, 0);

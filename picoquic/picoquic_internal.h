@@ -674,6 +674,7 @@ typedef struct st_picoquic_quic_t {
     unsigned int is_port_blocking_disabled : 1; /* Do not check client port on incoming connections */
     unsigned int are_path_callbacks_enabled : 1; /* Enable path specific callbacks by default */
     unsigned int use_predictable_random : 1; /* For logging tests */
+    unsigned int defer_stream_data_consumption : 1; /* Defer stream data consumption to application */
     picoquic_stateless_packet_t* pending_stateless_packet;
 
     picoquic_congestion_algorithm_t const* default_congestion_alg;
@@ -813,6 +814,7 @@ typedef struct st_picoquic_stream_head_t {
     uint64_t stream_id;
     struct st_picoquic_path_t * affinity_path; /* Path for which affinity is set, or NULL if none */
     uint64_t consumed_offset; /* amount of data consumed by the application */
+    uint64_t delivered_offset; /* amount of data delivered to the application */
     uint64_t fin_offset; /* If the fin mark is received, index of the byte after last */
     uint64_t maxdata_local; /* flow control limit of how much the peer is authorized to send */
     uint64_t maxdata_local_acked; /* highest value in max stream data frame acked by the peer */
