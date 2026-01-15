@@ -1127,6 +1127,8 @@ typedef struct st_picoquic_path_t {
     unsigned int is_lost_feedback_notified : 1; /* Lost feedback has been notified */
     unsigned int is_cca_probing_up : 1; /* congestion control algorithm is seeking more bandwidth */
     unsigned int rtt_is_initialized : 1; /* RTT was measured at least once. */
+    unsigned int slipstream_path_mode : 2; /* 0=unknown, 1=recursive, 2=authoritative */
+    unsigned int slipstream_no_ack_delay : 1; /* Disable delayed ACK for this path */
     
     /* Management of retransmissions in a path.
      * The "path_packet" variables are used for the RACK algorithm, per path, to avoid
