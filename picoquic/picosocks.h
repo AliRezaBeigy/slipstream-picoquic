@@ -22,6 +22,10 @@
 #ifndef PICOSOCKS_H
 #define PICOSOCKS_H
 
+#if !defined(_WINDOWS) && (defined(_WIN32) || defined(__WIN32__) || defined(__MINGW32__) || defined(_WIN64) || defined(__MINGW64__))
+#define _WINDOWS
+#endif
+
 #ifdef _WINDOWS
 /* clang-format off */
 #define WIN32_LEAN_AND_MEAN

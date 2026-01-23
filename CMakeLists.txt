@@ -115,6 +115,11 @@ set(PICOQUIC_LIBRARY_FILES
     picoquic/unified_log.c
     picoquic/util.c)
 
+# Windows compatibility: add wintimeofday implementation
+if(WIN32)
+    list(APPEND PICOQUIC_LIBRARY_FILES picoquic/wincompat.c)
+endif()
+
 set(PICOQUIC_CORE_HEADERS
      picoquic/picoquic.h
      picoquic/picosocks.h
@@ -225,6 +230,20 @@ if(PICOQUIC_FETCH_PTLS)
         GIT_REPOSITORY      https://github.com/h2o/picotls.git
         GIT_TAG             5a4461d8a3948d9d26bf861e7d90cb80d8093515)
     FetchContent_MakeAvailable(picotls)
+
+    # Windows compatibility: provide wintimeofday implementation for picotls
+    if(WIN32)
+        FetchContent_GetProperties(picotls SOURCE_DIR PTLS_SOURCE_DIR)
+        # Copy wincompat.h to picotls include directory
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/picoquic/wincompat.h
+             DESTINATION ${PTLS_SOURCE_DIR}/include/)
+        # Copy wincompat.c to picotls lib directory
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/picoquic/wincompat.c
+             DESTINATION ${PTLS_SOURCE_DIR}/lib/)
+        # Add wincompat.c to picotls-core target
+        target_sources(picotls-core PRIVATE ${PTLS_SOURCE_DIR}/lib/wincompat.c)
+        message(STATUS "Added Windows compatibility files to picotls")
+    endif()
 endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

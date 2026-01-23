@@ -22,9 +22,14 @@
 #ifndef WINCOMPAT_H
 #define WINCOMPAT_H
 
+#if !defined(_WINDOWS) && (defined(_WIN32) || defined(__WIN32__) || defined(__MINGW32__) || defined(_WIN64) || defined(__MINGW64__))
+#define _WINDOWS
+#endif
+
 #include <stdint.h>
 #define ssize_t int
 #include <Winsock2.h>
+#include <ws2tcpip.h>
 
 #ifndef gettimeofday
 #define gettimeofday wintimeofday
