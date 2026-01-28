@@ -25,18 +25,12 @@
 #include "picosocks.h"
 #include "picoquic.h"
 #include "picoquic_utils.h"
+#ifdef _WINDOWS
+#include "wincompat.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-/* Windows compatibility: define ssize_t if not already defined */
-#ifdef _WINDOWS
-#ifndef _SSIZE_T_DEFINED
-#define _SSIZE_T_DEFINED
-#include <stddef.h>
-typedef int ssize_t;
-#endif
 #endif
 
 #define PICOQUIC_PACKET_LOOP_SOCKETS_MAX 4
@@ -154,11 +148,6 @@ int picoquic_packet_loop_v2(picoquic_quic_t* quic,
     picoquic_packet_loop_cb_fn loop_callback,
     void * loop_callback_ctx);
 
-#ifdef _WINDOWS
-DWORD WINAPI picoquic_packet_loop_v3(LPVOID v_ctx);
-#else
-void* picoquic_packet_loop_v3(void* v_ctx);
-#endif
 /* Threaded version of packet loop, when running picoquic in a background thread.
 * 
 * Thread is started by calling picoquic_start_network_thread, which
@@ -347,4 +336,3 @@ int picoquic_packet_loop_open_sockets(uint16_t local_port, int local_af, int soc
 }
 #endif
 #endif /* PICOQUIC_PACKET_LOOP_H */
-

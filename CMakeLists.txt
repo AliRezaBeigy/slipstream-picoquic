@@ -28,6 +28,13 @@ if(DISABLE_DEBUG_PRINTF)
     list(APPEND PICOQUIC_COMPILE_DEFINITIONS DISABLE_DEBUG_PRINTF)
 endif()
 
+if(WIN32)
+    list(APPEND PICOQUIC_COMPILE_DEFINITIONS _WINDOWS)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        list(APPEND PICOQUIC_COMPILE_DEFINITIONS _WINDOWS64)
+    endif()
+endif()
+
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(CMakePushCheckState)
@@ -230,19 +237,11 @@ if(PICOQUIC_FETCH_PTLS)
         GIT_REPOSITORY      https://github.com/h2o/picotls.git
         GIT_TAG             5a4461d8a3948d9d26bf861e7d90cb80d8093515)
     FetchContent_MakeAvailable(picotls)
-
-    # Windows compatibility: provide wintimeofday implementation for picotls
     if(WIN32)
-        FetchContent_GetProperties(picotls SOURCE_DIR PTLS_SOURCE_DIR)
-        # Copy wincompat.h to picotls include directory
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/picoquic/wincompat.h
-             DESTINATION ${PTLS_SOURCE_DIR}/include/)
-        # Copy wincompat.c to picotls lib directory
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/picoquic/wincompat.c
-             DESTINATION ${PTLS_SOURCE_DIR}/lib/)
-        # Add wincompat.c to picotls-core target
-        target_sources(picotls-core PRIVATE ${PTLS_SOURCE_DIR}/lib/wincompat.c)
-        message(STATUS "Added Windows compatibility files to picotls")
+        target_include_directories(picotls-core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/picoquic)
+        target_compile_options(picotls-core PRIVATE
+            $<$<C_COMPILER_ID:MSVC>:/FIwincompat.h>
+            $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>>:-include wincompat.h>)
     endif()
 endif()
 

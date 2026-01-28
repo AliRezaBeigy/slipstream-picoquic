@@ -2,24 +2,14 @@
  * Windows compatibility functions for picoquic/picotls
  * Implements wintimeofday() which is declared in wincompat.h
  *
- * Note: wincompat.h is force-included via /FI compiler flag, which provides
- * the timezone struct definition and the wintimeofday declaration.
+ * Note: wincompat.h provides the timezone struct definition and declaration.
  */
 
-#ifdef _WIN32
+#ifdef _WINDOWS
 
-#include <Winsock2.h>
+#include "wincompat.h"
 #include <Windows.h>
 #include <stdint.h>
-
-/* Define timezone struct if not already defined */
-#ifndef _TIMEZONE_DEFINED
-#define _TIMEZONE_DEFINED
-struct timezone {
-    int tz_minuteswest; /* minutes west of Greenwich */
-    int tz_dsttime;     /* type of DST correction */
-};
-#endif
 
 /*
  * wintimeofday - Windows implementation of gettimeofday
@@ -62,4 +52,4 @@ int wintimeofday(struct timeval* tv, struct timezone* tz)
     return 0;
 }
 
-#endif /* _WIN32 */
+#endif /* _WINDOWS */

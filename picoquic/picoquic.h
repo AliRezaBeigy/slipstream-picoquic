@@ -22,10 +22,6 @@
 #ifndef PICOQUIC_H
 #define PICOQUIC_H
 
-#if !defined(_WINDOWS) && (defined(_WIN32) || defined(__WIN32__) || defined(__MINGW32__) || defined(_WIN64) || defined(__MINGW64__))
-#define _WINDOWS
-#endif
-
 #include <stdint.h>
 #include <stdarg.h>
 #ifdef _WINDOWS
