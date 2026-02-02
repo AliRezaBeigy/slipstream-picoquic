@@ -189,7 +189,6 @@
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</PreprocessToFile>
     </ClCompile>
     <ClCompile Include="util.c" />
-    <ClCompile Include="wincompat.c" />
     <ClCompile Include="winsockloop.c" />
   </ItemGroup>
   <ItemGroup>

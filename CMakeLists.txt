@@ -115,11 +115,6 @@ set(PICOQUIC_LIBRARY_FILES
     picoquic/unified_log.c
     picoquic/util.c)
 
-# Windows compatibility: add wintimeofday implementation
-if(WIN32)
-    list(APPEND PICOQUIC_LIBRARY_FILES picoquic/wincompat.c)
-endif()
-
 set(PICOQUIC_CORE_HEADERS
      picoquic/picoquic.h
      picoquic/picosocks.h
@@ -231,6 +226,7 @@ if(PICOQUIC_FETCH_PTLS)
         GIT_TAG             5a4461d8a3948d9d26bf861e7d90cb80d8093515)
     FetchContent_MakeAvailable(picotls)
     if(WIN32)
+        target_sources(picotls-core PRIVATE ${picotls_SOURCE_DIR}/picotlsvs/picotls/wintimeofday.c)
         set(PTLS_TARGETS picotls-core picotls-fusion picotls-minicrypto picotls-openssl)
         foreach(target IN LISTS PTLS_TARGETS)
             if(TARGET ${target})

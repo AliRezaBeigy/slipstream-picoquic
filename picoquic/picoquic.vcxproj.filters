@@ -138,9 +138,6 @@
     <ClCompile Include="pacing.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wincompat.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="picoquic.h">
